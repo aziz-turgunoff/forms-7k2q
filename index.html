@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Klinika uchun savollar</title>
+<style>
+:root{--bg:#f6f7f9;--fg:#1c2330;--muted:#5d6879;--card:#ffffff;--line:#d9dee6;--accent:#0b6e69;--accent-fg:#ffffff;--chip:#eef2f6;--warn:#9a5b00}
+@media (prefers-color-scheme: dark){:root{--bg:#10151c;--fg:#e8ecf2;--muted:#9aa6b8;--card:#18202b;--line:#2c3746;--accent:#3fb8af;--accent-fg:#06201e;--chip:#222c39;--warn:#f0b35a}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+.top{position:sticky;top:0;background:var(--bg);z-index:5;padding:10px 16px 8px;border-bottom:1px solid var(--line)}
+.top .row{display:flex;justify-content:space-between;align-items:center;gap:12px;max-width:640px;margin:0 auto}
+.top .lbl{font-size:.88rem;color:var(--muted)}
+.bar{height:6px;background:var(--chip);border-radius:3px;max-width:640px;margin:8px auto 0;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+main{flex:1;width:100%;max-width:640px;margin:0 auto;padding:20px 16px 120px}
+h1{font-size:1.5rem;line-height:1.25;margin:8px 0 12px}
+h2{font-size:1.3rem;line-height:1.3;margin:4px 0 8px}
+p{margin:0 0 12px}
+.muted{color:var(--muted);font-size:.95rem}
+.hint{color:var(--muted);font-size:.92rem;border-left:3px solid var(--accent);padding:2px 10px;margin:0 0 14px}
+.opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;color:var(--fg);background:var(--card);border:2px solid var(--line);border-radius:14px;padding:14px 16px;min-height:56px;margin:0 0 10px;cursor:pointer}
+.opt .dot{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--muted)}
+.opt.multi .dot{border-radius:6px}
+.opt.on{border-color:var(--accent);background:var(--chip)}
+.opt.on .dot{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 4px var(--chip)}
+.opt.multi.on .dot{box-shadow:none;position:relative}
+.opt.multi.on .dot::after{content:"";position:absolute;left:6px;top:2px;width:6px;height:12px;border:solid var(--accent-fg);border-width:0 3px 3px 0;transform:rotate(45deg)}
+.opt.small{min-height:44px;padding:8px 14px;font-size:.95rem;color:var(--muted)}
+input[type=text],textarea{width:100%;font:inherit;color:var(--fg);background:var(--card);border:2px solid var(--line);border-radius:14px;padding:12px 14px;min-height:56px}
+textarea{min-height:150px;resize:vertical}
+input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+.other{margin:-2px 0 12px}
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));}
+.nav .in{max-width:640px;margin:0 auto;display:flex;gap:10px}
+button{font:inherit;min-height:52px;padding:0 18px;border-radius:14px;border:2px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+.nav .primary{flex:1}
+.link{background:none;border:none;color:var(--accent);min-height:44px;padding:0 4px;font-weight:600}
+.menu{position:fixed;inset:0;background:var(--bg);z-index:10;overflow:auto;padding:16px}
+.menu .in{max-width:640px;margin:0 auto}
+.menu li{list-style:none}
+.menu ul{padding:0;margin:12px 0}
+.menu .item{display:flex;justify-content:space-between;width:100%;text-align:left;margin:0 0 8px}
+.res{width:100%;min-height:220px;font-size:.9rem}
+.msg{min-height:1.4em;color:var(--accent);font-size:.95rem}
+.stack{display:flex;flex-direction:column;gap:10px;margin:12px 0}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="top" id="top"><div class="row"><span class="lbl" id="lbl"></span><button class="link" id="mbtn" type="button">Bo'limlar</button></div><div class="bar"><i id="pb"></i></div></div>
+<main id="main"></main>
+<div class="nav hidden" id="nav"><div class="in"><button id="back" type="button">Orqaga</button><button id="next" class="primary" type="button">Keyingi</button></div></div>
+<div class="menu hidden" id="menu"><div class="in"><h2>Bo'limlar</h2><ul id="mlist"></ul><button id="mclose" class="primary" type="button" style="width:100%">Yopish</button></div></div>
+<script>
+var DATA = {"title": "Klinika uchun savollar", "intro": "Bu anketa klinikangizning kuni bo'yicha tuzilgan: bemor qo'ng'iroq qiladi, yoziladi, keladi, davolanadi, to'laydi, qaytib keladi. To'g'ri yoki noto'g'ri javob yo'q. Bilmagan savolingizga \"Bilmayman\" deb javob bering: shanba-yakshanba birga ko'rib chiqamiz. Iltimos, bemorlarning ism-familiyasi va telefon raqamlarini yozmang.", "func": ["Juda kerak", "Bo'lsa yaxshi", "Kerak emas", "Bilmayman"], "other": "Boshqa (o'zim yozaman)", "desc": {"14.1": "Hamma bemor bir joyda: ismi, telefoni, qachon kelgani, nima davolangani.", "14.2": "Qaysi shifokor qaysi soatda band, bir qarashda ko'rinadi.", "14.3": "Telefondan ham ochib ishlash mumkin.", "14.4": "Har bir tishning holati chizmada: nima davolangan, nima qilish kerak.", "14.5": "Davolash rejasi va narxi tayyorlanadi, bemorga ko'rsatiladi yoki chop etiladi.", "14.6": "Kim qancha to'ladi, kim qancha qarz: hammasi hisobda.", "14.7": "Shifokor oyligi va ulushi o'zi hisoblanadi.", "14.8": "Materiallar qancha qoldi, qachon tugaydi.", "14.9": "Rentgen va rasmlar bemor kartasiga biriktiriladi.", "14.10": "Rozilik va shartnoma blanklari tayyor chiqadi, chop etasiz.", "14.11": "Tushum, qarz, bemorlar soni va boshqa raqamlar egasi uchun bir sahifada.", "14.12": "Bemorga qabuldan oldin SMS boradi.", "14.13": "Bemor Telegramda eslatma oladi va o'zi yozila oladi.", "14.14": "Bemor havola orqali o'zi qabulga yoziladi.", "14.15": "Instagramdagi xabarlar tizimda ko'rinadi.", "14.16": "Davolangan bemorga 6 oydan keyin \"ahvolingiz qanday\" deb avtomatik xabar boradi.", "14.17": "Kim, qachon nimani o'zgartirgani yozib boriladi.", "14.18": "Har kuni kechqurun Telegramga bir kunlik hisobot keladi.", "14.19": "Telegramda yozib so'raysiz: \"bugun qancha tushum bo'ldi?\" va javob keladi.", "14.20": "Ma'lumot qo'shimcha himoyalanadi. Ko'p odam bir vaqtda ishlaganda tizim sinab ko'riladi.", "14.21": "Ma'lumotlar O'zbekistondagi serverda turadi."}, "tg": "aziz_turgunoff", "sections": [{"id": "A", "title": "Avval o'ylab ko'ring", "qs": [{"id": "A.1", "q": "Klinikangizda bir kun qanday o'tadi? Ertalabdan kechgacha, o'z so'zingiz bilan yozing.", "t": "long", "o": []}, {"id": "A.2", "q": "Bugun eng ko'p vaqtingizni nima oladi?", "t": "long", "o": []}, {"id": "A.3", "q": "Qaysi ish hozir qo'lda qilinadi, lekin kompyuter qilsa yaxshi bo'lardi?", "t": "long", "o": []}, {"id": "A.4", "q": "Qaysi ma'lumotni topish uchun eng ko'p vaqt ketadi? (masalan: eski bemor, qarz, kimdir nima davolangan)", "t": "long", "o": []}, {"id": "A.5", "q": "Bemor sizning klinikangizdan yoqmay ketgan bo'lishi mumkin bo'lgan holat bo'lganmi? Nima bo'lgan?", "t": "long", "o": []}, {"id": "A.6", "q": "Boshqa klinikada yoki biror dasturda sizga yoqqan narsa bormi? Nima yoqdi?", "t": "long", "o": []}, {"id": "A.7", "q": "Xodimlaringiz yangi tizimga qanday qarashadi? Kim yordam beradi, kim qiynalishi mumkin?", "t": "long", "o": []}, {"id": "A.8", "q": "Yangi tizimdan nimadan qo'rqasiz?", "t": "long", "o": []}, {"id": "A.9", "q": "Bir yildan keyin klinikangiz qanday bo'lishini xohlaysiz?", "t": "long", "o": []}, {"id": "A.10", "q": "Bu savollarda yo'q, lekin aytmoqchi bo'lgan narsangiz bormi? Erkin yozing.", "t": "long", "o": []}]}, {"id": "0", "title": "Klinika haqida", "qs": [{"id": "0.1", "q": "Klinika nomi", "t": "text", "o": []}, {"id": "0.2", "q": "Shahar yoki tuman", "t": "text", "o": []}, {"id": "0.3", "q": "Nechta kreslo (stomatologik kreslo) bor?", "t": "choice", "o": ["1", "2", "3-4", "5 va undan ko'p"]}, {"id": "0.4", "q": "Nechta shifokor ishlaydi?", "t": "text", "o": []}, {"id": "0.5", "q": "Boshqa xodimlar kimlar?", "t": "multi", "o": ["Administrator (resepshn)", "Yordamchi (assistent, hamshira)", "Kassir", "Buxgalter", "Marketolog yoki SMM", "Zubnoy texnik", "Boshqa"]}, {"id": "0.6", "q": "Kuniga o'rtacha nechta bemor qabul qilinadi?", "t": "choice", "o": ["1-5", "6-15", "16-30", "30 dan ko'p", "Bilmayman"]}, {"id": "0.7", "q": "Filial bormi?", "t": "choice", "o": ["Bitta klinika", "Filial bor yoki rejalashtirilgan"]}, {"id": "0.8", "q": "Qanday qurilmalar bor?", "t": "multi", "o": ["Resepshenda ishlaydigan kompyuter yoki noutbuk", "Kompyuter bor, lekin ishlatilmayapti", "Planshet", "Faqat telefonlar", "Printer"]}, {"id": "0.9", "q": "Klinikada internet qanday?", "t": "choice", "o": ["Doim yaxshi", "Ba'zan uziladi", "Tez-tez uziladi", "Bilmayman"]}, {"id": "0.10", "q": "Hozir biror dastur yoki Excel ishlatiladimi?", "t": "choice", "o": ["Yo'q, hammasi qog'ozda", "Excel yoki Google Jadval", "Boshqa dastur bor (nomini 0.11 ga yozing)", "Bilmayman"]}, {"id": "0.11", "q": "Dastur nomi (agar bor bo'lsa)", "t": "text", "o": []}]}, {"id": "1", "title": "Bemor qo'ng'iroq qiladi yoki yozadi", "qs": [{"id": "1.1", "q": "Bemorlar sizga qayerdan murojaat qiladi?", "t": "multi", "o": ["Telefon qo'ng'irog'i", "Telegram", "Instagram", "Klinikaga o'zi keladi", "Tanishlar tavsiyasi", "Boshqa"]}, {"id": "1.2", "q": "Telefonga kim javob beradi?", "t": "choice", "o": ["Administrator", "Shifokorning o'zi", "Doim ham hech kim emas", "Bilmayman"]}, {"id": "1.3", "q": "Kuniga taxminan nechta murojaat keladi?", "t": "choice", "o": ["1-5", "6-15", "16-30", "30 dan ko'p", "Bilmayman"]}, {"id": "1.4", "q": "Murojaatlar hozir qayerga yoziladi (daftar, telefon va h.k.)?", "t": "text", "o": []}]}, {"id": "2", "title": "Qabulga yozilish (zapis)", "qs": [{"id": "2.1", "q": "Qabulga yozishni hozir qanday yuritasiz?", "t": "choice", "o": ["Daftarda", "Alohida varaqlarda", "Telefonda (eslatma yoki Excel)", "Boshqacha"]}, {"id": "2.2", "q": "Bemor belgilangan vaqtga kelmay qolishi qanchalik tez-tez bo'ladi?", "t": "choice", "o": ["Deyarli yo'q", "Haftada 1-3 ta", "Haftada 4 tadan ko'p", "Bilmayman"]}, {"id": "2.3", "q": "Qabuldan oldin bemorga eslatma beriladimi?", "t": "choice", "o": ["Yo'q", "Ha, qo'ng'iroq qilamiz", "Ha, xabar yuboramiz"]}, {"id": "2.4", "q": "Bemor o'zi onlayn yozila olishini xohlaysizmi?", "t": "choice", "o": ["Ha", "Yo'q", "Keyinroq", "Bilmayman"]}]}, {"id": "3", "title": "Bemor keldi: karta (kartochka)", "qs": [{"id": "3.1", "q": "Bemor kartasi hozir qanday yuritiladi?", "t": "choice", "o": ["Qog'ozda", "Kompyuterda", "Karta yuritilmaydi", "Bilmayman"]}, {"id": "3.2", "q": "Kartada qanday ma'lumot yoziladi?", "t": "multi", "o": ["Ism-familiya", "Tug'ilgan sana", "Telefon", "Manzil", "Kasalliklar va allergiya (anamnez)", "Qaysi tish davolangan", "Shifokor izohi", "Rasm yoki rentgen", "Boshqa"]}, {"id": "3.3", "q": "Bemordan yozma rozilik olinadimi (rozilik blankasi)?", "t": "choice", "o": ["Ha, qog'ozda", "Ba'zan", "Yo'q"]}, {"id": "3.4", "q": "Rentgen va rasmlar qayerda saqlanadi?", "t": "choice", "o": ["Qog'ozda", "Kompyuterda", "Telefonda", "Boshqa joyda (rentgen xonasi)", "Saqlanmaydi"]}, {"id": "3.5", "q": "Eski qog'oz kartalar taxminan nechta?", "t": "choice", "o": ["100 tagacha", "100-500", "500-2000", "2000 dan ko'p", "Bilmayman"]}, {"id": "3.6", "q": "Eski kartalarni tizimga ko'chirish kerakmi?", "t": "choice", "o": ["Hammasini", "Faqat faol bemorlarni", "Yangilaridan boshlaymiz", "Bilmayman"]}]}, {"id": "4", "title": "Davolash", "qs": [{"id": "4.1", "q": "Shifokor davolashni qayerga yozadi?", "t": "choice", "o": ["Qog'ozga", "Kompyuterga", "Hech qayerga, eslab qoladi", "Bilmayman"]}, {"id": "4.2", "q": "Tish holati chizmasi (zubnaya formula) yuritiladimi?", "t": "choice", "o": ["Ha, qog'ozda", "Yo'q, lekin kerak", "Yo'q, kerak emas"]}, {"id": "4.3", "q": "Davolash rejasi va narxi bemorga yozma beriladimi?", "t": "choice", "o": ["Ha", "Og'zaki aytamiz", "Ba'zan"]}, {"id": "4.4", "q": "Xizmatlar narx ro'yxati (prays-list) bormi?", "t": "choice", "o": ["Ha, yozma", "Yo'q, narxlar og'zaki"]}, {"id": "4.5", "q": "Bir necha tashrifli davolash (implant, breket va h.k.) bormi?", "t": "choice", "o": ["Ko'p", "Ba'zan", "Yo'q"]}, {"id": "4.6", "q": "Zubnoy texnik (laboratoriya) bilan qanday ishlaysiz?", "t": "choice", "o": ["O'z texnigimiz bor", "Tashqi laboratoriya", "Ishlamaymiz"]}, {"id": "4.7", "q": "Materiallar (ombor, sklad) hisobi yuritiladimi?", "t": "choice", "o": ["Yuritilmaydi", "Daftarda", "Excelda", "Bilmayman"]}]}, {"id": "5", "title": "To'lov (kassa)", "qs": [{"id": "5.1", "q": "Bemorlar qanday to'laydi?", "t": "multi", "o": ["Naqd", "Karta (terminal)", "Payme yoki Click", "Bank o'tkazmasi", "Bo'lib to'lash (rassrochka)", "Oldindan to'lov (avans)"]}, {"id": "5.2", "q": "Qarz (nasiya) bo'ladimi?", "t": "choice", "o": ["Ko'p", "Ba'zan", "Yo'q"]}, {"id": "5.3", "q": "Chegirma beriladimi?", "t": "choice", "o": ["Ha, qoida bilan", "Ba'zan", "Yo'q"]}, {"id": "5.4", "q": "Kunlik kassa hisobini kim va qanday yuritadi?", "t": "text", "o": []}, {"id": "5.5", "q": "Shifokorlarga oylik (zarplata) qanday hisoblanadi?", "t": "choice", "o": ["Belgilangan summa", "Ish hajmidan foiz", "Aralash", "Bilmayman"]}]}, {"id": "6", "title": "Qayta kelish", "qs": [{"id": "6.1", "q": "Davolangan bemorlar bilan keyin aloqa qilasizmi?", "t": "choice", "o": ["Doim", "Ba'zan", "Yo'q"]}, {"id": "6.2", "q": "Profilaktik ko'rik uchun bemorni qayta chaqirish (masalan, 6 oydan keyin) kerakmi?", "t": "choice", "o": ["Ha, avtomatik xabar bilan", "Ha, qo'lda qo'ng'iroq bilan", "Kerak emas"]}, {"id": "6.3", "q": "Bemordan sharh (fikr) so'rashni xohlaysizmi?", "t": "choice", "o": ["Ha", "Yo'q"]}]}, {"id": "7", "title": "Xodimlar", "qs": [{"id": "7.1", "q": "Narxlar, to'lovlar va telefon raqamlarini kim ko'rishi kerak?", "t": "multi", "o": ["Faqat egasi", "Administrator", "Shifokorlar", "Kassir"]}, {"id": "7.2", "q": "Kim nimani o'zgartirganini ko'rishni xohlaysizmi?", "t": "choice", "o": ["Ha", "Yo'q", "Bilmayman"]}, {"id": "7.3", "q": "Xodimlar kompyuterda ishlashga odatlanganmi?", "t": "choice", "o": ["Ha", "Qisman", "Yo'q, o'rgatish kerak"]}, {"id": "7.4", "q": "Xodim ishdan ketsa, eng ko'p nima qiyin bo'ladi?", "t": "long", "o": []}]}, {"id": "8", "title": "Shifokorlar jadvali", "qs": [{"id": "8.1", "q": "Shifokorlar qanday ishlaydi?", "t": "multi", "o": ["Har kuni", "Navbat bilan (smena)", "Faqat ma'lum kunlarda", "Shartnoma bo'yicha tashqaridan keladi"]}, {"id": "8.2", "q": "Har bir shifokorga alohida kreslo bormi?", "t": "choice", "o": ["Ha", "Kreslolar umumiy", "Bilmayman"]}, {"id": "8.3", "q": "Ish jadvalini kim va qanday tuzadi?", "t": "text", "o": []}]}, {"id": "9", "title": "Pul va hisobot", "qs": [{"id": "9.1", "q": "Egasi sifatida nimani ko'rishni xohlaysiz?", "t": "multi", "o": ["Kunlik tushum", "Qarzlar", "Bemorlar soni", "Qaysi xizmatlar ko'p", "Har shifokor natijasi", "Bemor qayerdan kelgani (reklama)", "Xarajatlar", "Foyda"]}, {"id": "9.2", "q": "Hisobotni qanchalik tez-tez ko'rmoqchisiz?", "t": "choice", "o": ["Har kuni", "Haftada", "Oyda"]}, {"id": "9.3", "q": "Qayerda ko'rmoqchisiz?", "t": "multi", "o": ["Telefonda", "Kompyuterda", "Telegramda xabar bo'lib"]}]}, {"id": "10", "title": "Hujjatlar", "qs": [{"id": "10.1", "q": "Qaysi hujjatlar chop etiladi?", "t": "multi", "o": ["Shartnoma", "Rozilik blankasi", "Spravka", "Chek", "Yo'llanma", "Davolash rejasi", "Boshqa"]}, {"id": "10.2", "q": "Klinika sog'liqni saqlash yoki soliq tizimiga hisobot yoki retsept yuboradimi?", "t": "choice", "o": ["Ha", "Yo'q", "Bilmayman"]}, {"id": "10.3", "q": "Agar yuborsa, qaysi tizimga?", "t": "text", "o": []}]}, {"id": "11", "title": "Marketing: Instagram va Telegram", "qs": [{"id": "11.1", "q": "Instagram sahifa bormi?", "t": "choice", "o": ["Ha", "Yo'q", "Ochmoqchimiz"]}, {"id": "11.2", "q": "Telegram kanal yoki bot bormi?", "t": "choice", "o": ["Kanal bor", "Bot bor", "Yo'q"]}, {"id": "11.3", "q": "Instagramga kim yozadi (post, video)?", "t": "choice", "o": ["O'zim", "SMM mutaxassisi", "Hech kim", "Bilmayman"]}, {"id": "11.4", "q": "Bemorlar Instagram yoki Telegramga yozadimi?", "t": "choice", "o": ["Ha, ko'p", "Ba'zan", "Yo'q"]}, {"id": "11.5", "q": "Marketingda nimani xohlaysiz?", "t": "multi", "o": ["Savollarga avtomatik javob", "Instagramdan qabulga yozish", "Bemor qayerdan kelganini hisoblash", "Post va videolarni tayyorlashda yordam", "Sharhlarni yig'ish"]}]}, {"id": "12", "title": "Nimani yo'qotmaslik kerak", "qs": [{"id": "12.1", "q": "Eng muhim ma'lumotlar qaysilar?", "t": "multi", "o": ["Bemor kartalari", "Rentgen va rasmlar", "To'lovlar va qarzlar", "Telefon raqamlar", "Shifokor jadvali"]}, {"id": "12.2", "q": "Ma'lumotlar qayerda saqlanishi siz uchun muhimmi?", "t": "choice", "o": ["O'zbekiston ichida bo'lsin", "Farqi yo'q", "Bilmayman"]}, {"id": "12.3", "q": "Sun'iy intellekt bemor ma'lumotlarini ko'rishi mumkinmi?", "t": "choice", "o": ["Yo'q", "Faqat ism va telefonsiz", "Ha", "Bilmayman"]}, {"id": "12.4", "q": "Bemordan ma'lumotlarini saqlashga rozilik olinadimi?", "t": "choice", "o": ["Ha, yozma", "Yo'q", "Bilmayman"]}]}, {"id": "13", "title": "Ishlamay qolsa", "qs": [{"id": "13.1", "q": "Internet yoki kompyuter ishlamay qolsa, hozir nima qilasiz?", "t": "long", "o": []}, {"id": "13.2", "q": "Loyiha bo'yicha aloqa uchun kim mas'ul bo'ladi? Ism va telefon", "t": "text", "o": []}, {"id": "13.3", "q": "Tizim haqida eng ko'p nimadan xavotirdasiz?", "t": "multi", "o": ["Qotib qoladi", "Ma'lumot yo'qoladi", "Xodimlar o'rgana olmaydi", "Narx oshib ketadi", "Muammo bo'lsa javob berishmaydi", "Boshqa"]}]}, {"id": "14", "title": "Funksiyalar tanlovi", "qs": [{"id": "14.1", "q": "Bemorlar bazasi va tashriflar tarixi", "t": "func", "o": []}, {"id": "14.2", "q": "Qabul jadvali (shifokor va kun bo'yicha)", "t": "func", "o": []}, {"id": "14.3", "q": "Telefonda ishlash", "t": "func", "o": []}, {"id": "14.4", "q": "Tish formulasi (har bir bemor uchun tish holati)", "t": "func", "o": []}, {"id": "14.5", "q": "Davolash rejasi va narxlar", "t": "func", "o": []}, {"id": "14.6", "q": "Kassa va qarzlar hisobi", "t": "func", "o": []}, {"id": "14.7", "q": "Shifokor oyligi va ulushini hisoblash", "t": "func", "o": []}, {"id": "14.8", "q": "Ombor (materiallar hisobi)", "t": "func", "o": []}, {"id": "14.9", "q": "Rentgen, rasm va hujjatlarni bemor kartasiga biriktirish", "t": "func", "o": []}, {"id": "14.10", "q": "Rozilik va shartnoma blanklarini chop etish", "t": "func", "o": []}, {"id": "14.11", "q": "Egasi uchun hisobotlar", "t": "func", "o": []}, {"id": "14.12", "q": "SMS eslatma (qabulga kelish uchun)", "t": "func", "o": []}, {"id": "14.13", "q": "Telegram bot (bemorga eslatma va yozilish)", "t": "func", "o": []}, {"id": "14.14", "q": "Onlayn yozilish havolasi", "t": "func", "o": []}, {"id": "14.15", "q": "Instagram xabarlarini tizimga ulash", "t": "func", "o": []}, {"id": "14.16", "q": "Qayta kelish uchun avtomatik eslatma (masalan, 6 oydan keyin)", "t": "func", "o": []}, {"id": "14.17", "q": "Kim nimani o'zgartirganini ko'rsatuvchi jurnal", "t": "func", "o": []}, {"id": "14.18", "q": "Egasiga kunlik hisobot Telegramda", "t": "func", "o": []}, {"id": "14.19", "q": "Telegramda sun'iy intellekt yordamchi (klinika ma'lumotlari bo'yicha savol-javob)", "t": "func", "o": []}, {"id": "14.20", "q": "Qo'shimcha himoya va ko'p odam bir vaqtda ishlaganda sinov", "t": "func", "o": []}, {"id": "14.21", "q": "Ma'lumotlarni O'zbekistondagi serverda saqlash", "t": "func", "o": []}]}, {"id": "15", "title": "Muddat va byudjet", "qs": [{"id": "15.1", "q": "Qachon ishga tushirmoqchisiz?", "t": "choice", "o": ["1 oy ichida", "2-3 oy ichida", "Shoshilmayman", "Bilmayman"]}, {"id": "15.2", "q": "Taxminiy byudjet (aytmasangiz ham bo'ladi)", "t": "choice", "o": ["1000 $ gacha", "1000-3000 $", "3000-6000 $", "Aytishni xohlamayman", "Bilmayman"]}, {"id": "15.3", "q": "To'lov qanday qulay?", "t": "choice", "o": ["Bir martalik", "Oylik obuna", "Bilmayman"]}, {"id": "15.4", "q": "Qaysi yo'l yaqinroq?", "t": "choice", "o": ["Tayyor tizim (oylik to'lov bilan)", "Klinikamga moslab yoziladigan tizim", "Maslahat bering"]}]}, {"id": "16", "title": "Boshqa istaklar", "qs": [{"id": "16.1", "q": "Yuqorida yo'q, lekin xohlagan narsalaringizni erkin yozing (xohlagancha, \"fantaziya\")", "t": "long", "o": []}]}, {"id": "17", "title": "Bugun eng og'riqli uchta narsa", "qs": [{"id": "17.1", "q": "1-chi: bugun eng ko'p vaqt, pul yoki asabingizni olayotgan narsa", "t": "long", "o": []}, {"id": "17.2", "q": "2-chi", "t": "long", "o": []}, {"id": "17.3", "q": "3-chi", "t": "long", "o": []}]}]};
+var KEY = "klinika_savollar_v2";
+var state = {};
+function lsGet(){try{var s=localStorage.getItem(KEY);return s?JSON.parse(s):{};}catch(e){return {};}}
+function lsSet(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+function lsClear(){try{localStorage.removeItem(KEY);}catch(e){}}
+state = lsGet();
+var Q = [];
+DATA.sections.forEach(function(s){s.qs.forEach(function(q){q.sec=s;Q.push(q);});});
+var pos = (typeof state._pos==="number" && state._pos>=0 && state._pos<Q.length)?state._pos:0;
+var mode = "start";
+var OTHER = DATA.other;
+function $(id){return document.getElementById(id);}
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e;}
+function has(q){var v=state[q.id];if(q.t==="multi")return Array.isArray(v)&&v.length>0;return typeof v==="string"&&v.trim()!=="";}
+function nAnswered(){var n=0;Q.forEach(function(q){if(has(q))n++;});return n;}
+function save(){state._pos=pos;lsSet();}
+function setProgress(){
+ var q=Q[pos];var inSec=q.sec.qs.indexOf(q)+1;
+ $("lbl").textContent=q.sec.id+". "+q.sec.title+"  ·  "+inSec+"/"+q.sec.qs.length;
+ $("pb").style.width=Math.round((pos+1)/Q.length*100)+"%";
+}
+function show(m){
+ mode=m;
+ var isQ=(m==="q");
+ $("top").classList.toggle("hidden",!isQ&&m!=="end");
+ $("nav").classList.toggle("hidden",!isQ);
+ $("main").innerHTML="";window.scrollTo(0,0);
+ if(m==="start")renderStart();else if(m==="q")renderQ();else renderEnd();
+}
+function renderStart(){
+ var m=$("main");
+ m.appendChild(el("h1",null,DATA.title));
+ m.appendChild(el("p",null,DATA.intro));
+ m.appendChild(el("p","muted","Taxminan 25-30 daqiqa. Bir yo'la qilish shart emas: javoblaringiz shu telefonda saqlanadi, istalgan payt to'xtab, keyin davom etishingiz mumkin. Javoblar hech qayerga o'zi yuborilmaydi."));
+ m.appendChild(el("p","muted","Savollar bir-bir chiqadi. Javob bermoqchi bo'lmasangiz, \"Keyingi\" ni bosing."));
+ var st=el("div","stack");
+ var n=nAnswered();
+ if(n>0){var c=el("button","primary","Davom etish ("+n+" ta javob saqlangan)");c.addEventListener("click",function(){var i=firstUn();pos=(i>=0?i:pos);show("q");});st.appendChild(c);
+  var r=el("button",null,"Boshidan boshlash");r.addEventListener("click",function(){pos=0;show("q");});st.appendChild(r);}
+ else{var b=el("button","primary","Boshlash");b.addEventListener("click",function(){pos=0;show("q");});st.appendChild(b);}
+ m.appendChild(st);
+}
+function firstUn(){for(var i=0;i<Q.length;i++){if(!has(Q[i]))return i;}return -1;}
+function go(d){
+ if(d>0&&pos>=Q.length-1){save();show("end");return;}
+ pos=Math.max(0,Math.min(Q.length-1,pos+d));save();show("q");
+}
+function renderQ(){
+ var q=Q[pos],m=$("main");setProgress();
+ var first=(q.sec.qs.indexOf(q)===0);
+ m.appendChild(el("h2",null,q.t==="func"?("Sizga kerakmi: "+q.q):q.q));
+ if(q.t==="func"){m.appendChild(el("p","muted",DATA.desc[q.id]||""));}
+ if(q.sec.id==="A"&&q.id==="A.1"){m.appendChild(el("p","hint","To'g'ri yoki noto'g'ri javob yo'q. O'z so'zingiz bilan yozing. Telefon klaviaturasidagi mikrofon tugmasini bossangiz, gapirib yozish ham mumkin (telefoningiz o'zbek tilini bilsa)."));}
+ if(q.sec.id==="14"&&q.id==="14.1"){m.appendChild(el("p","hint","Har bir funksiya uchun tanlang: juda kerak, bo'lsa yaxshi yoki kerak emas. Bilmasangiz, \"Bilmayman\" ni tanlang."));}
+ if(q.t==="text"||q.t==="long"){
+  var inp=q.t==="long"?document.createElement("textarea"):document.createElement("input");
+  if(q.t==="text")inp.type="text";
+  inp.value=state[q.id]||"";inp.setAttribute("aria-label",q.q);
+  inp.addEventListener("input",function(){state[q.id]=inp.value;lsSet();});
+  m.appendChild(inp);
+ }else if(q.t==="func"){
+  var opts=DATA.func;
+  opts.forEach(function(o,i){
+   var b=el("button","opt"+(state[q.id]===o?" on":"")+(i===3?" small":""));b.type="button";
+   b.appendChild(el("span","dot"));b.appendChild(el("span",null,o));
+   b.addEventListener("click",function(){state[q.id]=(state[q.id]===o?"":o);save();if(state[q.id]){setTimeout(function(){go(1);},180);}else{show("q");}});
+   m.appendChild(b);
+  });
+ }else if(q.t==="choice"){
+  var all=q.o.concat([OTHER]);
+  all.forEach(function(o){
+   var b=el("button","opt"+(state[q.id]===o?" on":"")+(o===OTHER?" small":""));b.type="button";
+   b.appendChild(el("span","dot"));b.appendChild(el("span",null,o));
+   b.addEventListener("click",function(){
+    if(state[q.id]===o){state[q.id]="";save();show("q");return;}
+    state[q.id]=o;save();
+    if(o===OTHER){show("q");var t=document.getElementById("oth");if(t)t.focus();}else{setTimeout(function(){go(1);},180);}
+   });
+   m.appendChild(b);
+  });
+  if(state[q.id]===OTHER){var w=el("div","other");var ta=document.createElement("input");ta.type="text";ta.id="oth";ta.placeholder="O'zingiz yozing";ta.value=state[q.id+"_o"]||"";ta.addEventListener("input",function(){state[q.id+"_o"]=ta.value;lsSet();});w.appendChild(ta);m.appendChild(w);}
+ }else if(q.t==="multi"){
+  var cur=Array.isArray(state[q.id])?state[q.id]:[];
+  m.appendChild(el("p","muted","Bir nechtasini tanlash mumkin."));
+  q.o.concat([OTHER]).forEach(function(o){
+   var on=cur.indexOf(o)>=0;
+   var b=el("button","opt multi"+(on?" on":"")+(o===OTHER?" small":""));b.type="button";
+   b.appendChild(el("span","dot"));b.appendChild(el("span",null,o));
+   b.addEventListener("click",function(){
+    var a=Array.isArray(state[q.id])?state[q.id].slice():[];var i=a.indexOf(o);
+    if(i>=0)a.splice(i,1);else a.push(o);
+    state[q.id]=a;save();show("q");
+    if(o===OTHER&&a.indexOf(OTHER)>=0){var t=document.getElementById("oth");if(t)t.focus();}
+   });
+   m.appendChild(b);
+  });
+  if(cur.indexOf(OTHER)>=0){var w2=el("div","other");var t2=document.createElement("input");t2.type="text";t2.id="oth";t2.placeholder="O'zingiz yozing";t2.value=state[q.id+"_o"]||"";t2.addEventListener("input",function(){state[q.id+"_o"]=t2.value;lsSet();});w2.appendChild(t2);m.appendChild(w2);}
+ }
+ $("back").classList.toggle("hidden",pos===0);
+ $("next").textContent=(pos>=Q.length-1)?"Tugatish":"Keyingi";
+}
+function valueText(q){
+ var v=state[q.id];
+ if(q.t==="multi"){var a=(v||[]).map(function(x){return x===OTHER?("Boshqa: "+(state[q.id+"_o"]||"").trim()):x;});return a.join(", ");}
+ if(v===OTHER)return "Boshqa: "+(state[q.id+"_o"]||"").trim();
+ return (v||"").trim();
+}
+function build(){
+ var out=[DATA.title.toUpperCase(),""],miss=[];
+ DATA.sections.forEach(function(s){
+  out.push(s.id+"-BO'LIM. "+s.title.toUpperCase());
+  s.qs.forEach(function(q){
+   if(!has(q)){miss.push(q.id);return;}
+   out.push(q.id+". "+q.q+"\n   Javob: "+valueText(q));
+  });
+  out.push("");
+ });
+ out.push(miss.length?("Javob berilmagan savollar ("+miss.length+" ta): "+miss.join(", ")):"Hamma savolga javob berildi.");
+ return {text:out.join("\n"),miss:miss};
+}
+function say(t){var e=$("msg");if(e)e.textContent=t;}
+function copyText(t){
+ if(navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(t);}
+ return new Promise(function(res,rej){var ta=$("res");ta.removeAttribute("readonly");ta.select();ta.setSelectionRange(0,t.length);var ok=false;try{ok=document.execCommand("copy");}catch(e){}ta.setAttribute("readonly","");ok?res():rej();});
+}
+function renderEnd(){
+ var m=$("main");var r=build();
+ $("lbl").textContent="Tayyor";$("pb").style.width="100%";
+ m.appendChild(el("h2",null,"Rahmat!"));
+ m.appendChild(el("p",null,"Endi javoblarni Azizbekka yuboring. Pastdagi tugmalardan birini bosing."));
+ if(r.miss.length){var p=el("p","muted","Javob berilmagan savollar: "+r.miss.length+" ta. Xohlasangiz, ularga qaytib javob bering yoki shunday yuboring.");m.appendChild(p);
+  var bk=el("button",null,"Javobsiz savollarga qaytish");bk.addEventListener("click",function(){var i=firstUn();if(i>=0){pos=i;show("q");}});m.appendChild(bk);}
+ var ta=document.createElement("textarea");ta.id="res";ta.className="res";ta.readOnly=true;ta.value=r.text;ta.style.marginTop="14px";m.appendChild(ta);
+ var st=el("div","stack");
+ var sh=el("button","primary","Telegramga yuborish");sh.addEventListener("click",function(){var t=$("res").value;
+  if(navigator.share){navigator.share({title:DATA.title,text:t}).then(function(){say("");},function(){say("Yuborilmadi. \"Nusxa olish\" ni bosing.");});}
+  else{copyText(t).then(function(){say("Matn nusxalandi. Telegramda suhbatga qo'ying.");},function(){say("Nusxa olinmadi. Matnni qo'lda belgilab nusxalang.");});}
+ });st.appendChild(sh);
+ var cp=el("button",null,"Nusxa olish");cp.addEventListener("click",function(){var t=$("res").value;copyText(t).then(function(){say("Nusxa olindi. Endi Telegramda suhbatga qo'ying.");},function(){say("Nusxa olinmadi. Matnni qo'lda belgilab nusxalang.");});});st.appendChild(cp);
+ if(DATA.tg){var tg=el("button",null,"Nusxa olib, Azizbek bilan chatni ochish");tg.addEventListener("click",function(){var t=$("res").value;copyText(t).then(function(){say("Nusxa olindi. Chatga qo'ying.");window.open("https://t.me/"+DATA.tg,"_blank");},function(){window.open("https://t.me/"+DATA.tg,"_blank");});});st.appendChild(tg);}
+ var sv=el("button",null,"Faylga saqlash");sv.addEventListener("click",function(){try{var b=new Blob([$("res").value],{type:"text/plain;charset=utf-8"});var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="klinika-javoblari.txt";document.body.appendChild(a);a.click();a.remove();say("Fayl saqlandi.");}catch(e){say("Saqlab bo'lmadi. \"Nusxa olish\" ni bosing.");}});st.appendChild(sv);
+ var ba=el("button",null,"Savollarga qaytish");ba.addEventListener("click",function(){pos=Q.length-1;show("q");});st.appendChild(ba);
+ var rs=el("button","link","Hamma javobni shu telefondan o'chirish");rs.addEventListener("click",function(){if(confirm("Hamma javoblar shu telefondan o'chiriladi. Davom etasizmi?")){state={};lsClear();pos=0;show("start");}});st.appendChild(rs);
+ m.appendChild(st);
+ var msg=el("p","msg");msg.id="msg";msg.setAttribute("role","status");m.appendChild(msg);
+}
+$("next").addEventListener("click",function(){go(1);});
+$("back").addEventListener("click",function(){go(-1);});
+$("mbtn").addEventListener("click",function(){
+ var ul=$("mlist");ul.innerHTML="";
+ DATA.sections.forEach(function(s){
+  var k=0;s.qs.forEach(function(q){if(has(q))k++;});
+  var li=document.createElement("li");var b=el("button","item");b.type="button";b.appendChild(el("span",null,s.id+". "+s.title));b.appendChild(el("span","muted",k+"/"+s.qs.length));
+  b.addEventListener("click",function(){pos=Q.indexOf(s.qs[0]);save();$("menu").classList.add("hidden");show("q");});
+  li.appendChild(b);ul.appendChild(li);
+ });
+ $("menu").classList.remove("hidden");
+});
+$("mclose").addEventListener("click",function(){$("menu").classList.add("hidden");});
+show("start");
+</script>
+</body>
+</html>
