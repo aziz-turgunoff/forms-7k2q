@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kitob savollari 📚</title>
+<style>
+  :root { --bg:#fff8f0; --card:#fff; --ink:#2d2a32; --muted:#7a7480; --accent:#ff7a59; --ok:#2fb67c; --bad:#e5484d; --line:#eee4da; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--ink); line-height:1.5; }
+  main { max-width:720px; margin:0 auto; padding:20px 16px 60px; }
+  h1 { font-size:1.7rem; margin:.2em 0; }
+  h2 { font-size:1.3rem; margin:.2em 0 .6em; }
+  .muted { color:var(--muted); font-size:.95rem; }
+  .progress { background:var(--line); border-radius:99px; height:18px; overflow:hidden; margin:10px 0 4px; }
+  .progress > div { background:linear-gradient(90deg,#ffb347,var(--accent)); height:100%; transition:width .4s; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; margin-top:18px; }
+  .book { background:var(--card); border:2px solid var(--line); border-radius:16px; padding:14px; cursor:pointer; text-align:left; font:inherit; color:inherit; }
+  .book:hover { border-color:var(--accent); }
+  .book .emoji { font-size:2rem; }
+  .book b { display:block; margin:6px 0 2px; }
+  .book.done { border-color:var(--ok); background:#effaf4; }
+  .book.locked { opacity:.45; cursor:default; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin:14px 0; }
+  .q { font-weight:600; margin-bottom:8px; }
+  label.opt { display:block; border:2px solid var(--line); border-radius:12px; padding:10px 12px; margin:6px 0; cursor:pointer; }
+  label.opt input { margin-right:8px; }
+  label.opt.right { border-color:var(--ok); background:#effaf4; }
+  label.opt.wrong { border-color:var(--bad); background:#fdeeee; }
+  textarea { width:100%; min-height:110px; border:2px solid var(--line); border-radius:12px; padding:10px; font:inherit; resize:vertical; }
+  textarea:focus { outline:none; border-color:var(--accent); }
+  button.main { background:var(--accent); color:#fff; border:0; border-radius:12px; padding:12px 18px; font:inherit; font-weight:700; cursor:pointer; margin:6px 6px 0 0; }
+  button.ghost { background:none; border:2px solid var(--line); border-radius:12px; padding:10px 16px; font:inherit; cursor:pointer; margin:6px 6px 0 0; }
+  .section { margin-top:26px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.05em; font-size:.85rem; }
+  .result { font-size:1.15rem; }
+  .err { color:var(--bad); font-weight:600; }
+  .count { font-size:.8rem; color:var(--muted); text-align:right; }
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<script>
+// Each book: test questions (a = index of the right option) and open questions.
+// To add a book, add an object to BOOKS. TOTAL_BOOKS is the goal.
+const TOTAL_BOOKS = 10;
+const PASS_PERCENT = 70;
+const MIN_ANSWER_CHARS = 60;
+
+const BOOKS = [
+  {
+    id: "morisaki", emoji: "📖", title: "Morisaki kitob do'konidagi kunlar", author: "Satoshi Yagisava",
+    test: [
+      { q: "Takako nega ishidan ketib, uyini tashlab chiqadi?", o: ["Sevgan yigiti boshqa qizga uylanishini aytadi", "Ishdan haydaladi", "Boshqa shaharga o'qishga ketadi", "Kasal bo'lib qoladi"], a: 0 },
+      { q: "Takako qayerda yashay boshlaydi?", o: ["Satoru amakisining kitob do'koni ustidagi kichkina xonada", "Ota-onasining uyida", "Talabalar yotoqxonasida", "Dugonasining uyida"], a: 0 },
+      { q: "Morisaki do'konida qanday kitoblar sotiladi?", o: ["Ishlatilgan (eski) kitoblar", "Faqat yangi darsliklar", "Faqat rangli bolalar kitoblari", "Faqat jurnallar"], a: 0 },
+      { q: "Do'kon Tokioning qaysi mahallasida joylashgan?", o: ["Jinbocho — kitob do'konlari ko'p mahalla", "Dengiz bo'yidagi qishloqda", "Tog' tepasida", "Aeroport yonida"], a: 0 },
+      { q: "Kitob boshida Takako kitob o'qishni yaxshi ko'rardimi?", o: ["Yo'q, deyarli o'qimasdi — keyin kitoblarni sevib qoldi", "Ha, kuniga bir nechta kitob o'qirdi", "Faqat ertak o'qirdi", "U o'zi kitob yozardi"], a: 0 },
+      { q: "Kitobning ikkinchi qismida kim qaytib keladi?", o: ["Satoru amakining rafiqasi Momoko", "Takakoning sobiq yigiti", "Takakoning onasi", "Do'konning birinchi egasi"], a: 0 },
+    ],
+    open: [
+      "Kitob boshida Takako o'zini qanday his qilardi? Oxirida unda nima o'zgardi? O'z so'zlaring bilan yoz.",
+      "Muallif bu kitob orqali bizga nimani aytmoqchi deb o'ylaysan? (Masalan: odamga og'ir paytda nima yordam beradi?)",
+      "Sen xafa bo'lganingda senga nima yordam beradi? Kitobdagi qaysi voqea senga eng ko'p yoqdi va nega?",
+    ],
+  },
+  {
+    id: "ruhlar", emoji: "🐉", title: "Ruhlar olami", author: "Hayao Miyazaki",
+    test: [
+      { q: "Bosh qahramon qizning ismi nima?", o: ["Chixiro", "Mei", "Kiki", "Sofi"], a: 0 },
+      { q: "Chixironing ota-onasiga nima bo'ldi?", o: ["Ruhlar taomini so'ramasdan yeb, cho'chqaga aylanib qolishdi", "O'rmonda adashib qolishdi", "Uzoq uyquga ketishdi", "Toshga aylanib qolishdi"], a: 0 },
+      { q: "Yubaba Chixiroga nima qiladi?", o: ["Ismini olib, unga \"Sen\" degan yangi ism beradi", "Uni sichqonga aylantiradi", "Darhol uyiga qaytarib yuboradi", "Unga sehrli tayoqcha sovg'a qiladi"], a: 0 },
+      { q: "Xaku aslida kim bo'lib chiqadi?", o: ["Daryo ruhi (Kohaku daryosi)", "Yubabaning o'g'li", "Oddiy maktab o'quvchisi", "Hammomning oshpazi"], a: 0 },
+      { q: "Chixiro yuvgan \"badbo'y mehmon\" aslida kim edi?", o: ["Axlat bilan ifloslangan daryo ruhi", "Yovuz sehrgar", "Yubabaning singlisi", "Yuzsiz"], a: 0 },
+      { q: "Yuzsiz hammomdagilarga nima taklif qilardi va Chixiro nima qildi?", o: ["Oltin taklif qilardi — Chixiro olmadi", "Oltin taklif qilardi — Chixiro hammasini oldi", "Taom taklif qilardi — Chixiro yedi", "Hech narsa taklif qilmasdi"], a: 0 },
+      { q: "Oxirida Chixiro qanday sinovdan o'tadi?", o: ["Cho'chqalar ichidan ota-onasini topishi kerak — va ularning hech biri ota-onasi emasligini to'g'ri aytadi", "Ajdaho bilan jang qiladi", "Sehrli so'zni topadi", "Hammomni bir o'zi tozalaydi"], a: 0 },
+    ],
+    open: [
+      "Chixiro boshida qanday qiz edi va oxirida qanday o'zgardi? Misol bilan yoz.",
+      "Nega ism bu hikoyada shunchalik muhim? Ismini unutish nimani anglatardi deb o'ylaysan?",
+      "Yuzsiz oltin bersa ham Chixiro olmadi. Muallif shu orqali bizga nimani aytmoqchi?",
+    ],
+  },
+  {
+    id: "bolakay", emoji: "🦊", title: "Bolakay, ko'rsichqon, tulki va tulpor", author: "Charli Makkizi",
+    test: [
+      { q: "Ko'rsichqon hammadan ko'p nimani yaxshi ko'radi?", o: ["Tortni", "Baliqni", "Olmani", "Asalni"], a: 0 },
+      { q: "Ular tulki bilan qanday tanishishadi?", o: ["Tulki tuzoqqa tushib qolgan edi, ko'rsichqon uni ozod qildi", "Tulki ularni mehmonga chaqirdi", "Tulki ularga yo'l ko'rsatdi", "Tulki ularning ovqatini o'g'irladi"], a: 0 },
+      { q: "Tulki qanday xarakterga ega?", o: ["Kam gapiradi, ehtiyotkor — oldin yaralangan", "Juda ko'p gapiradi va hazilkash", "Hammani aldaydi", "Hech narsadan qo'rqmaydi"], a: 0 },
+      { q: "Tulporning sirli xususiyati nima?", o: ["Uning qanotlari bor — ucha oladi", "Ko'rinmas bo'la oladi", "Olov purkaydi", "Hech qachon uxlamaydi"], a: 0 },
+      { q: "\"Sen aytgan eng jasur gaping nima?\" degan savolga tulpor nima deb javob beradi?", o: ["\"Yordam ber\"", "\"Men hech narsadan qo'rqmayman\"", "\"Xayr\"", "\"Men eng kuchliman\""], a: 0 },
+      { q: "Ko'rsichqon fikricha eng katta vaqt isrofi nima?", o: ["O'zingni boshqalar bilan solishtirish", "Uxlash", "O'ynash", "Kitob o'qish"], a: 0 },
+      { q: "Bolakay butun yo'l davomida nimani qidiradi?", o: ["Uyini — o'zi tegishli bo'lgan joyni", "Xazinani", "Yo'qolgan itini", "Sehrli kalitni"], a: 0 },
+    ],
+    open: [
+      "Nega \"yordam ber\" deyish jasorat hisoblanadi? Sen qachon kimdandir yordam so'ragansan?",
+      "Kitob oxirida bolakay \"uy\" haqida nimani tushunadi?",
+      "To'rt qahramondan qaysi biri senga ko'proq o'xshaydi va nega?",
+    ],
+  },
+  {
+    id: "iste-dod", emoji: "🌟", title: "Dunyo tan olgan 20 iste'dod sohibalari", author: "Gabriella Santini",
+    test: [
+      { q: "Bu qanday kitob?", o: ["Haqiqiy yashagan ayollar hayoti haqida", "Sehrgarlar haqidagi ertak", "Detektiv hikoya", "Taomlar retsepti kitobi"], a: 0 },
+      { q: "Kitobdagi ayollar maqsadiga asosan qanday erishgan?", o: ["Qiziqish, mehnat va qiyinchiliklardan qo'rqmaslik bilan", "Faqat omad tufayli", "Faqat boy bo'lgani uchun", "Hech qanday harakat qilmasdan"], a: 0 },
+    ],
+    open: [
+      "Kitobdagi qaysi 3 ayol senga eng ko'p yoqdi? Har biri nima bilan mashhur bo'lgan?",
+      "Ulardan biri hayotida qanday qiyinchilikka duch kelgan va uni qanday yengib o'tgan?",
+      "Bu ayollarning hammasini nima birlashtiradi deb o'ylaysan?",
+      "Bu kitob qizlarga nimani aytmoqchi?",
+      "Agar 20 yildan keyin sen ham shunday kitobga kirsang, nima bilan mashhur bo'lishni xohlarding?",
+    ],
+  },
+];
+
+// ---- storage ----
+const KEY = "kitob-savollari-v1";
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
+const save = (s) => localStorage.setItem(KEY, JSON.stringify(s));
+let state = load();
+
+const app = document.getElementById("app");
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// Same shuffled option order every time for a given question.
+function order(bookId, qi, n) {
+  let seed = 0;
+  for (const ch of bookId + qi) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  const idx = [...Array(n).keys()];
+  for (let i = n - 1; i > 0; i--) { seed = (seed * 1103515245 + 12345) >>> 0; const j = seed % (i + 1); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+  return idx;
+}
+
+function home() {
+  const done = BOOKS.filter((b) => state[b.id]?.passed).length;
+  const pct = Math.round((done / TOTAL_BOOKS) * 100);
+  let cards = BOOKS.map((b) => {
+    const r = state[b.id];
+    const badge = r?.passed ? "✅ Bajarildi" : r ? "✏️ Davom ettirish" : "Boshlash →";
+    return `<button class="book ${r?.passed ? "done" : ""}" onclick="openBook('${b.id}')">
+      <div class="emoji">${b.emoji}</div><b>${esc(b.title)}</b><div class="muted">${esc(b.author)}</div><div class="muted">${badge}</div></button>`;
+  }).join("");
+  for (let i = BOOKS.length; i < TOTAL_BOOKS; i++) cards += `<div class="book locked"><div class="emoji">🔒</div><b>${i + 1}-kitob</b><div class="muted">Tez orada</div></div>`;
+  app.innerHTML = `
+    <h1>📚 Kitob savollari</h1>
+    <p class="muted">10 ta kitobni o'qib, savollarga javob ber — sovg'a seni kutyapti 📱</p>
+    <div class="progress"><div style="width:${pct}%"></div></div>
+    <div class="muted"><b>${done} / ${TOTAL_BOOKS}</b> kitob bajarildi</div>
+    <div class="grid">${cards}</div>
+    <div class="card muted" style="margin-top:22px">
+      <b>Qoidalar:</b><br>
+      1) Har bir kitobda test va "o'ylab yoz" savollari bor.<br>
+      2) Testdan kamida ${PASS_PERCENT}% to'g'ri javob kerak.<br>
+      3) Yozma javoblar o'z so'zlaring bilan, har biri kamida 2–3 gap bo'lsin.<br>
+      4) Oxirida javoblaringni nusxa olib, Telegramda yubor.
+    </div>`;
+  window.scrollTo(0, 0);
+}
+
+function openBook(id) {
+  const b = BOOKS.find((x) => x.id === id);
+  const draft = state[id]?.draft || { test: {}, open: {} };
+  const tests = b.test.map((t, qi) => {
+    const opts = order(b.id, qi, t.o.length).map((oi) =>
+      `<label class="opt"><input type="radio" name="t${qi}" value="${oi}" ${draft.test[qi] == oi ? "checked" : ""}>${esc(t.o[oi])}</label>`).join("");
+    return `<div class="card"><div class="q">${qi + 1}. ${esc(t.q)}</div>${opts}</div>`;
+  }).join("");
+  const opens = b.open.map((q, i) =>
+    `<div class="card"><div class="q">${i + 1}. ${esc(q)}</div>
+     <textarea id="o${i}" placeholder="Javobingni shu yerga yoz...">${esc(draft.open[i] || "")}</textarea><div class="count" id="c${i}"></div></div>`).join("");
+  app.innerHTML = `
+    <button class="ghost" onclick="home()">← Orqaga</button>
+    <h2>${b.emoji} ${esc(b.title)}</h2><div class="muted">${esc(b.author)}</div>
+    <div class="section">1-qism · Test</div>${tests}
+    <div class="section">2-qism · O'ylab yoz</div>${opens}
+    <div id="msg"></div>
+    <button class="main" onclick="finish('${id}')">Tekshirish ✓</button>`;
+  app.oninput = () => { keepDraft(b); counts(b); };
+  counts(b);
+  window.scrollTo(0, 0);
+}
+
+function readForm(b) {
+  const test = {}, open = {};
+  b.test.forEach((_, qi) => { const c = document.querySelector(`input[name=t${qi}]:checked`); if (c) test[qi] = +c.value; });
+  b.open.forEach((_, i) => { open[i] = document.getElementById("o" + i).value; });
+  return { test, open };
+}
+function keepDraft(b) { state[b.id] = { ...(state[b.id] || {}), draft: readForm(b) }; save(state); }
+function counts(b) {
+  b.open.forEach((_, i) => {
+    const n = document.getElementById("o" + i).value.trim().length;
+    document.getElementById("c" + i).textContent = n < MIN_ANSWER_CHARS ? `Yana ${MIN_ANSWER_CHARS - n} ta harf` : "✓ Yetarli";
+  });
+}
+
+function finish(id) {
+  const b = BOOKS.find((x) => x.id === id);
+  const f = readForm(b);
+  const msg = document.getElementById("msg");
+  if (Object.keys(f.test).length < b.test.length) { msg.innerHTML = `<p class="err">Hamma test savollariga javob ber.</p>`; return; }
+  const short = b.open.findIndex((_, i) => f.open[i].trim().length < MIN_ANSWER_CHARS);
+  if (short >= 0) { msg.innerHTML = `<p class="err">${short + 1}-yozma savolga batafsilroq javob yoz (kamida 2–3 gap).</p>`; document.getElementById("o" + short).focus(); return; }
+
+  let right = 0;
+  b.test.forEach((t, qi) => {
+    document.querySelectorAll(`input[name=t${qi}]`).forEach((inp) => {
+      const lab = inp.parentElement; lab.classList.remove("right", "wrong");
+      if (+inp.value === t.a) lab.classList.add("right");
+      else if (inp.checked) lab.classList.add("wrong");
+    });
+    if (f.test[qi] === t.a) right++;
+  });
+  const pct = Math.round((right / b.test.length) * 100);
+  const passed = pct >= PASS_PERCENT;
+  state[id] = { draft: f, score: pct, passed, at: new Date().toISOString() };
+  save(state);
+
+  const report = makeReport(b, f, right, pct);
+  msg.innerHTML = `<div class="card result">
+    Test: <b>${right} / ${b.test.length}</b> (${pct}%) — ${passed ? "✅ Zo'r! Bu kitob bajarildi." : "❌ Yana bir bor o'ylab ko'r. Xato javoblar qizil bilan belgilandi — kitobni qaytadan varaqlab, yana urinib ko'r."}
+    ${passed ? `<p class="muted">Endi javoblaringni nusxa olib, Telegramda yubor. Yozma javoblarni kattalar o'qib chiqadi.</p>
+    <button class="main" onclick="copyReport()">📋 Javoblarni nusxa olish</button>
+    <button class="ghost" onclick="shareReport()">✈️ Telegramda yuborish</button>
+    <button class="ghost" onclick="home()">Boshqa kitob →</button>` : ""}</div>`;
+  window._report = report;
+  msg.scrollIntoView({ behavior: "smooth" });
+}
+
+function makeReport(b, f, right, pct) {
+  const lines = [`📚 ${b.title} — ${b.author}`, `Test: ${right}/${b.test.length} (${pct}%)`, ""];
+  b.test.forEach((t, qi) => { if (f.test[qi] !== t.a) lines.push(`❌ ${t.q} → ${t.o[f.test[qi]]}`); });
+  lines.push("", "✍️ Yozma javoblar:");
+  b.open.forEach((q, i) => lines.push("", `${i + 1}. ${q}`, f.open[i].trim()));
+  return lines.join("\n");
+}
+async function copyReport() {
+  try { await navigator.clipboard.writeText(window._report); alert("Nusxa olindi! Endi Telegramga qo'yib yubor."); }
+  catch { prompt("Shu matnni nusxa ol:", window._report); }
+}
+function shareReport() {
+  location.href = "https://t.me/share/url?url=" + encodeURIComponent(" ") + "&text=" + encodeURIComponent(window._report);
+}
+
+home();
+</script>
+</body>
+</html>
